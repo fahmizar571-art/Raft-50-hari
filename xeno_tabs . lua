@@ -1,202 +1,107 @@
--- 50 DAYS ON A RAFT | XENO TAB MENU VERSION
+-- 50 Days on a Raft | XENO | LIGHT ESP VERSION
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 repeat task.wait() until LP.Character
-local PlayerGui = LP:WaitForChild("PlayerGui")
+local PG = LP:WaitForChild("PlayerGui")
 
 --------------------------------------------------
--- GUI BASE
+-- GUI
 --------------------------------------------------
-local gui = Instance.new("ScreenGui", PlayerGui)
-gui.Name = "RaftXenoTabs"
+local gui = Instance.new("ScreenGui", PG)
 gui.ResetOnSpawn = false
+gui.Name = "RaftLightESP"
 
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,260,0,300)
-main.Position = UDim2.new(0.04,0,0.3,0)
+main.Size = UDim2.new(0,240,0,260)
+main.Position = UDim2.new(0.05,0,0.3,0)
 main.BackgroundColor3 = Color3.fromRGB(25,25,25)
-main.Active = true
-main.Draggable = true
+main.Active, main.Draggable = true, true
 
 local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1,0,0,35)
-title.Text = "50 Days on a Raft"
-title.TextScaled = true
+title.Size = UDim2.new(1,0,0,30)
+title.Text = "RAFT | LIGHT ESP"
 title.TextColor3 = Color3.new(1,1,1)
 title.BackgroundTransparency = 1
+title.TextScaled = true
 
 --------------------------------------------------
 -- STATE
 --------------------------------------------------
-local S = {
-    ESP = false,
-    FARM = false,
-    ANTI_SHARK = true,
-    AUTO_BUILD = false
+local ESP = {
+    Wood = false,
+    Iron = false,
+    Food = false,
+    Drink = false
 }
 
+local ESPObjects = {}
+
 --------------------------------------------------
--- TAB BUTTON
+-- BUTTON
 --------------------------------------------------
-local tabs = {}
-local function NewTab(name, x)
+local function Btn(text, y, cb)
     local b = Instance.new("TextButton", main)
-    b.Size = UDim2.new(0,80,0,25)
-    b.Position = UDim2.new(0,x,0,40)
-    b.Text = name
-    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
-    b.TextColor3 = Color3.new(1,1,1)
-
-    local f = Instance.new("Frame", main)
-    f.Size = UDim2.new(1,0,1,-70)
-    f.Position = UDim2.new(0,0,0,70)
-    f.Visible = false
-    f.BackgroundTransparency = 1
-
-    tabs[name] = f
-    b.MouseButton1Click:Connect(function()
-        for _,v in pairs(tabs) do v.Visible = false end
-        f.Visible = true
-    end)
-end
-
-NewTab("ESP", 0)
-NewTab("FARM", 85)
-NewTab("TP", 170)
-tabs.ESP.Visible = true
-
---------------------------------------------------
--- BUTTON MAKER
---------------------------------------------------
-local function Btn(parent, text, y, cb)
-    local b = Instance.new("TextButton", parent)
     b.Size = UDim2.new(0.9,0,0,32)
     b.Position = UDim2.new(0.05,0,0,y)
     b.Text = text
-    b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
     b.TextColor3 = Color3.new(1,1,1)
     b.MouseButton1Click:Connect(cb)
 end
 
 --------------------------------------------------
--- ESP TAB
+-- ESP MENU
 --------------------------------------------------
-Btn(tabs.ESP, "ESP ITEM", 10, function()
-    S.ESP = not S.ESP
-end)
+Btn("🌲 ESP KAYU", 40, function() ESP.Wood = not ESP.Wood end)
+Btn("⛓ ESP BESI", 75, function() ESP.Iron = not ESP.Iron end)
+Btn("🍖 ESP MAKANAN", 110, function() ESP.Food = not ESP.Food end)
+Btn("💧 ESP MINUMAN", 145, function() ESP.Drink = not ESP.Drink end)
+Btn("❌ CLOSE", 190, function() gui:Destroy() end)
 
 --------------------------------------------------
--- FARM TAB
+-- ESP FUNCTION (RINGAN)
 --------------------------------------------------
-Btn(tabs.FARM, "AUTO FARM", 10, function()
-    S.FARM = not S.FARM
-end)
+local function addESP(obj, color)
+    if ESPObjects[obj] then return end
+    local h = Instance.new("Highlight")
+    h.FillColor = color
+    h.OutlineTransparency = 1
+    h.Parent = obj
+    ESPObjects[obj] = h
+end
 
-Btn(tabs.FARM, "AUTO BUILD / EXPAND", 55, function()
-    S.AUTO_BUILD = not S.AUTO_BUILD
-end)
-
-Btn(tabs.FARM, "ANTI SHARK", 100, function()
-    S.ANTI_SHARK = not S.ANTI_SHARK
-end)
-
---------------------------------------------------
--- TP TAB
---------------------------------------------------
-Btn(tabs.TP, "TP KE RAFT", 10, function()
-    for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") and v.Name:lower():find("raft") then
-            LP.Character.HumanoidRootPart.CFrame = v.CFrame + Vector3.new(0,5,0)
-            break
-        end
+local function clearESP()
+    for _,h in pairs(ESPObjects) do
+        if h then h:Destroy() end
     end
-end)
-
---------------------------------------------------
--- CHARACTER
---------------------------------------------------
-local function HRP()
-    return LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    table.clear(ESPObjects)
 end
 
 --------------------------------------------------
--- ESP ITEM
---------------------------------------------------
-local function ESPItem(v)
-    if not v:FindFirstChild("ESP") then
-        local h = Instance.new("Highlight", v)
-        h.Name = "ESP"
-        h.FillColor = Color3.fromRGB(0,255,0)
-    end
-end
-
---------------------------------------------------
--- AUTO FARM
+-- SCAN LOOP (LOW CPU)
 --------------------------------------------------
 task.spawn(function()
-    while task.wait(1) do
-        if S.FARM and HRP() then
-            for _,v in pairs(workspace:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    local n = v.Name:lower()
-                    if n:find("food") or n:find("wood") or n:find("scrap") then
-                        HRP().CFrame = v.CFrame + Vector3.new(0,3,0)
-                        firetouchinterest(HRP(), v, 0)
-                        firetouchinterest(HRP(), v, 1)
-                        task.wait(0.25)
-                    end
-                end
-            end
-        end
-    end
-end)
+    while task.wait(2) do
+        clearESP()
 
---------------------------------------------------
--- AUTO BUILD / EXPAND (BASIC & SAFE)
---------------------------------------------------
-task.spawn(function()
-    while task.wait(5) do
-        if S.AUTO_BUILD then
-            for _,v in pairs(workspace:GetDescendants()) do
-                if v.Name:lower():find("raft") and v:IsA("BasePart") then
-                    HRP().CFrame = v.CFrame + Vector3.new(0,6,0)
-                    break
-                end
-            end
-        end
-    end
-end)
-
---------------------------------------------------
--- ANTI SHARK
---------------------------------------------------
-RunService.Heartbeat:Connect(function()
-    if S.ANTI_SHARK and LP.Character then
-        if LP.Character:FindFirstChild("Humanoid") then
-            LP.Character.Humanoid.Health = math.max(
-                LP.Character.Humanoid.Health,
-                90
-            )
-        end
-    end
-end)
-
---------------------------------------------------
--- LOOP ESP
---------------------------------------------------
-RunService.RenderStepped:Connect(function()
-    if S.ESP then
-        for _,v in pairs(workspace:GetDescendants()) do
+        for _,v in ipairs(workspace:GetDescendants()) do
             if v:IsA("BasePart") then
                 local n = v.Name:lower()
-                if n:find("food") or n:find("wood") or n:find("scrap") then
-                    ESPItem(v)
+
+                if ESP.Wood and (n:find("wood") or n:find("log")) then
+                    addESP(v, Color3.fromRGB(0,255,0))
+                elseif ESP.Iron and (n:find("iron") or n:find("scrap") or n:find("metal")) then
+                    addESP(v, Color3.fromRGB(180,180,180))
+                elseif ESP.Food and (n:find("food") or n:find("meat") or n:find("fish")) then
+                    addESP(v, Color3.fromRGB(255,120,0))
+                elseif ESP.Drink and (n:find("water") or n:find("drink")) then
+                    addESP(v, Color3.fromRGB(0,170,255))
                 end
             end
         end
     end
 end)
 
-warn("✅ Raft Xeno TAB Menu Loaded")
+warn("✅ LIGHT ESP LOADED")
