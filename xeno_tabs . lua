@@ -1,0 +1,202 @@
+-- 50 DAYS ON A RAFT | XENO TAB MENU VERSION
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LP = Players.LocalPlayer
+repeat task.wait() until LP.Character
+local PlayerGui = LP:WaitForChild("PlayerGui")
+
+--------------------------------------------------
+-- GUI BASE
+--------------------------------------------------
+local gui = Instance.new("ScreenGui", PlayerGui)
+gui.Name = "RaftXenoTabs"
+gui.ResetOnSpawn = false
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0,260,0,300)
+main.Position = UDim2.new(0.04,0,0.3,0)
+main.BackgroundColor3 = Color3.fromRGB(25,25,25)
+main.Active = true
+main.Draggable = true
+
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1,0,0,35)
+title.Text = "50 Days on a Raft"
+title.TextScaled = true
+title.TextColor3 = Color3.new(1,1,1)
+title.BackgroundTransparency = 1
+
+--------------------------------------------------
+-- STATE
+--------------------------------------------------
+local S = {
+    ESP = false,
+    FARM = false,
+    ANTI_SHARK = true,
+    AUTO_BUILD = false
+}
+
+--------------------------------------------------
+-- TAB BUTTON
+--------------------------------------------------
+local tabs = {}
+local function NewTab(name, x)
+    local b = Instance.new("TextButton", main)
+    b.Size = UDim2.new(0,80,0,25)
+    b.Position = UDim2.new(0,x,0,40)
+    b.Text = name
+    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
+    b.TextColor3 = Color3.new(1,1,1)
+
+    local f = Instance.new("Frame", main)
+    f.Size = UDim2.new(1,0,1,-70)
+    f.Position = UDim2.new(0,0,0,70)
+    f.Visible = false
+    f.BackgroundTransparency = 1
+
+    tabs[name] = f
+    b.MouseButton1Click:Connect(function()
+        for _,v in pairs(tabs) do v.Visible = false end
+        f.Visible = true
+    end)
+end
+
+NewTab("ESP", 0)
+NewTab("FARM", 85)
+NewTab("TP", 170)
+tabs.ESP.Visible = true
+
+--------------------------------------------------
+-- BUTTON MAKER
+--------------------------------------------------
+local function Btn(parent, text, y, cb)
+    local b = Instance.new("TextButton", parent)
+    b.Size = UDim2.new(0.9,0,0,32)
+    b.Position = UDim2.new(0.05,0,0,y)
+    b.Text = text
+    b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    b.TextColor3 = Color3.new(1,1,1)
+    b.MouseButton1Click:Connect(cb)
+end
+
+--------------------------------------------------
+-- ESP TAB
+--------------------------------------------------
+Btn(tabs.ESP, "ESP ITEM", 10, function()
+    S.ESP = not S.ESP
+end)
+
+--------------------------------------------------
+-- FARM TAB
+--------------------------------------------------
+Btn(tabs.FARM, "AUTO FARM", 10, function()
+    S.FARM = not S.FARM
+end)
+
+Btn(tabs.FARM, "AUTO BUILD / EXPAND", 55, function()
+    S.AUTO_BUILD = not S.AUTO_BUILD
+end)
+
+Btn(tabs.FARM, "ANTI SHARK", 100, function()
+    S.ANTI_SHARK = not S.ANTI_SHARK
+end)
+
+--------------------------------------------------
+-- TP TAB
+--------------------------------------------------
+Btn(tabs.TP, "TP KE RAFT", 10, function()
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v:IsA("BasePart") and v.Name:lower():find("raft") then
+            LP.Character.HumanoidRootPart.CFrame = v.CFrame + Vector3.new(0,5,0)
+            break
+        end
+    end
+end)
+
+--------------------------------------------------
+-- CHARACTER
+--------------------------------------------------
+local function HRP()
+    return LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+end
+
+--------------------------------------------------
+-- ESP ITEM
+--------------------------------------------------
+local function ESPItem(v)
+    if not v:FindFirstChild("ESP") then
+        local h = Instance.new("Highlight", v)
+        h.Name = "ESP"
+        h.FillColor = Color3.fromRGB(0,255,0)
+    end
+end
+
+--------------------------------------------------
+-- AUTO FARM
+--------------------------------------------------
+task.spawn(function()
+    while task.wait(1) do
+        if S.FARM and HRP() then
+            for _,v in pairs(workspace:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    local n = v.Name:lower()
+                    if n:find("food") or n:find("wood") or n:find("scrap") then
+                        HRP().CFrame = v.CFrame + Vector3.new(0,3,0)
+                        firetouchinterest(HRP(), v, 0)
+                        firetouchinterest(HRP(), v, 1)
+                        task.wait(0.25)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+--------------------------------------------------
+-- AUTO BUILD / EXPAND (BASIC & SAFE)
+--------------------------------------------------
+task.spawn(function()
+    while task.wait(5) do
+        if S.AUTO_BUILD then
+            for _,v in pairs(workspace:GetDescendants()) do
+                if v.Name:lower():find("raft") and v:IsA("BasePart") then
+                    HRP().CFrame = v.CFrame + Vector3.new(0,6,0)
+                    break
+                end
+            end
+        end
+    end
+end)
+
+--------------------------------------------------
+-- ANTI SHARK
+--------------------------------------------------
+RunService.Heartbeat:Connect(function()
+    if S.ANTI_SHARK and LP.Character then
+        if LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid.Health = math.max(
+                LP.Character.Humanoid.Health,
+                90
+            )
+        end
+    end
+end)
+
+--------------------------------------------------
+-- LOOP ESP
+--------------------------------------------------
+RunService.RenderStepped:Connect(function()
+    if S.ESP then
+        for _,v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") then
+                local n = v.Name:lower()
+                if n:find("food") or n:find("wood") or n:find("scrap") then
+                    ESPItem(v)
+                end
+            end
+        end
+    end
+end)
+
+warn("✅ Raft Xeno TAB Menu Loaded")
