@@ -1,136 +1,119 @@
--- 50 DAYS ON A RAFT | LIGHT MENU SCRIPT
-
-local Players = game:GetService("Players")
+--// FPS OPTIMIZATION
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
-repeat task.wait() until LP.Character
-local PG = LP:WaitForChild("PlayerGui")
+local Camera = workspace.CurrentCamera
 
---------------------------------------------------
--- GUI BASE
---------------------------------------------------
-local gui = Instance.new("ScreenGui", PG)
-gui.ResetOnSpawn = false
-gui.Name = "RaftMenu"
+pcall(function()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+end)
 
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,260,0,300)
-main.Position = UDim2.new(0.05,0,0.3,0)
-main.BackgroundColor3 = Color3.fromRGB(25,25,25)
-main.Active, main.Draggable = true, true
+--// SETTINGS
+local ESP_SETTINGS = {
+    Item = false,
+    Player = false,
+    Enemy = false
+}
 
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1,0,0,30)
-title.Text = "50 Days on a Raft"
-title.TextScaled = true
-title.TextColor3 = Color3.new(1,1,1)
-title.BackgroundTransparency = 1
+local ESP_CACHE = {}
 
---------------------------------------------------
--- TAB SYSTEM
---------------------------------------------------
-local tabs = {}
-local function NewTab(name, x)
-    local b = Instance.new("TextButton", main)
-    b.Size = UDim2.new(0,80,0,24)
-    b.Position = UDim2.new(0,x,0,35)
-    b.Text = name
-    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
-    b.TextColor3 = Color3.new(1,1,1)
-
-    local f = Instance.new("Frame", main)
-    f.Size = UDim2.new(1,0,1,-65)
-    f.Position = UDim2.new(0,0,0,65)
-    f.Visible = false
-    f.BackgroundTransparency = 1
-
-    tabs[name] = f
-    b.MouseButton1Click:Connect(function()
-        for _,v in pairs(tabs) do v.Visible = false end
-        f.Visible = true
-    end)
+--// CLEAR ESP
+local function ClearESP()
+    for _,v in pairs(ESP_CACHE) do
+        if v and v.Parent then
+            v:Destroy()
+        end
+    end
+    table.clear(ESP_CACHE)
 end
 
-NewTab("ESP",0)
-NewTab("AUTO",85)
-NewTab("TP",170)
-tabs.ESP.Visible = true
-
---------------------------------------------------
--- BUTTON
---------------------------------------------------
-local function Btn(p,text,y,cb)
-    local b = Instance.new("TextButton", p)
-    b.Size = UDim2.new(0.9,0,0,30)
-    b.Position = UDim2.new(0.05,0,0,y)
-    b.Text = text
-    b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    b.TextColor3 = Color3.new(1,1,1)
-    b.MouseButton1Click:Connect(cb)
+--// CREATE ESP
+local function CreateESP(part, text, color)
+    if not part then return end
+    local box = Instance.new("BoxHandleAdornment")
+    box.Size = part.Size
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 5
+    box.Transparency = 0.5
+    box.Color3 = color
+    box.Parent = part
+    table.insert(ESP_CACHE, box)
 end
 
---------------------------------------------------
--- STATE
---------------------------------------------------
-local ESP = {Wood=false,Iron=false,Food=false,Player=false,Bandit=false}
-local AutoFish=false
-local AutoGrab=false
-local ESPCache={}
-
---------------------------------------------------
--- ESP BUTTONS
---------------------------------------------------
-Btn(tabs.ESP,"🌲 ESP Kayu",5,function() ESP.Wood=not ESP.Wood end)
-Btn(tabs.ESP,"⛓ ESP Besi",40,function() ESP.Iron=not ESP.Iron end)
-Btn(tabs.ESP,"🍖 ESP Makanan",75,function() ESP.Food=not ESP.Food end)
-Btn(tabs.ESP,"👤 ESP Player",110,function() ESP.Player=not ESP.Player end)
-Btn(tabs.ESP,"🏴 ESP Perampok",145,function() ESP.Bandit=not ESP.Bandit end)
-
---------------------------------------------------
--- AUTO MENU
---------------------------------------------------
-Btn(tabs.AUTO,"🎣 Auto Mancing",10,function() AutoFish=not AutoFish end)
-Btn(tabs.AUTO,"🤖 Auto Ambil Item",50,function() AutoGrab=not AutoGrab end)
-
---------------------------------------------------
--- TP MENU
---------------------------------------------------
-Btn(tabs.TP,"🏠 TP Base / Raft",10,function()
+--// ITEM ESP
+local function ItemESP()
+    ClearESP()
     for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") and v.Name:lower():find("raft") then
-            LP.Character.HumanoidRootPart.CFrame = v.CFrame + Vector3.new(0,5,0)
-            break
+        if v:IsA("BasePart") then
+            local name = v.Name:lower()
+            if ESP_SETTINGS.Item then
+                if name:find("wood") or name:find("iron") or name:find("food") then
+                    CreateESP(v,"ITEM",Color3.fromRGB(0,255,0))
+                end
+            end
         end
     end
-end)
+end
 
-Btn(tabs.TP,"🧑‍🤝‍🧑 TP Player",50,function()
-    for _,p in pairs(Players:GetPlayers()) do
-        if p~=LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            LP.Character.HumanoidRootPart.CFrame =
-            p.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
-            break
+--// PLAYER ESP
+local function PlayerESP()
+    for _,plr in pairs(Players:GetPlayers()) do
+        if plr ~= LP and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            CreateESP(plr.Character.HumanoidRootPart,"PLAYER",Color3.fromRGB(0,150,255))
         end
     end
-end)
-
---------------------------------------------------
--- ESP SYSTEM (RINGAN)
---------------------------------------------------
-local function addESP(obj,color)
-    if ESPCache[obj] then return end
-    local h=Instance.new("Highlight",obj)
-    h.FillColor=color
-    h.OutlineTransparency=1
-    ESPCache[obj]=h
 end
 
-local function clearESP()
-    for _,v in pairs(ESPCache) do if v then v:Destroy() end end
-    table.clear(ESPCache)
+--// ENEMY / PERAMPOK ESP
+local function EnemyESP()
+    for _,v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Model") and v.Name:lower():find("enemy") then
+            local hrp = v:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                CreateESP(hrp,"ENEMY",Color3.fromRGB(255,0,0))
+            end
+        end
+    end
 end
 
+--// UPDATE LOOP (LOW LOAD)
 task.spawn(function()
     while task.wait(2) do
-        clearESP()
-        for _,v in pairs(work_
+        ClearESP()
+        if ESP_SETTINGS.Item then ItemESP() end
+        if ESP_SETTINGS.Player then PlayerESP() end
+        if ESP_SETTINGS.Enemy then EnemyESP() end
+    end
+end)
+
+--// SIMPLE UI
+local ScreenGui = Instance.new("ScreenGui",LP.PlayerGui)
+local Frame = Instance.new("Frame",ScreenGui)
+Frame.Size = UDim2.fromOffset(220,180)
+Frame.Position = UDim2.fromOffset(30,200)
+Frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Frame.Active = true
+Frame.Draggable = true
+
+local function Button(text,y,callback)
+    local b = Instance.new("TextButton",Frame)
+    b.Size = UDim2.fromOffset(200,40)
+    b.Position = UDim2.fromOffset(10,y)
+    b.Text = text
+    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
+    b.TextColor3 = Color3.new(1,1,1)
+    b.MouseButton1Click:Connect(callback)
+end
+
+Button("ESP ITEM",10,function()
+    ESP_SETTINGS.Item = not ESP_SETTINGS.Item
+end)
+
+Button("ESP PLAYER",60,function()
+    ESP_SETTINGS.Player = not ESP_SETTINGS.Player
+end)
+
+Button("ESP PERAMPOK",110,function()
+    ESP_SETTINGS.Enemy = not ESP_SETTINGS.Enemy
+end)
