@@ -1,119 +1,79 @@
---// FPS OPTIMIZATION
-local RunService = game:GetService("RunService")
+--====================================
+-- 50 DAYS ON A RAFT | PRO SCRIPT
+-- FPS OPTIMIZED | ALL IN ONE
+--====================================
+
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
 pcall(function()
     settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end)
 
---// SETTINGS
-local ESP_SETTINGS = {
-    Item = false,
-    Player = false,
-    Enemy = false
+--================ SETTINGS ================
+local CFG = {
+    ESP_ITEM = false,
+    ESP_PLAYER = false,
+    ESP_ENEMY = false,
+    AUTO_FISH = false,
+    AUTO_BRING = false
 }
 
 local ESP_CACHE = {}
 
---// CLEAR ESP
+--================ ESP CORE ================
 local function ClearESP()
     for _,v in pairs(ESP_CACHE) do
-        if v and v.Parent then
-            v:Destroy()
-        end
+        if v then v:Destroy() end
     end
     table.clear(ESP_CACHE)
 end
 
---// CREATE ESP
-local function CreateESP(part, text, color)
-    if not part then return end
+local function ESP(part,color)
     local box = Instance.new("BoxHandleAdornment")
-    box.Size = part.Size
     box.Adornee = part
+    box.Size = part.Size
     box.AlwaysOnTop = true
-    box.ZIndex = 5
     box.Transparency = 0.5
     box.Color3 = color
     box.Parent = part
     table.insert(ESP_CACHE, box)
 end
 
---// ITEM ESP
+--================ ESP FUNCTIONS ================
 local function ItemESP()
-    ClearESP()
     for _,v in pairs(workspace:GetDescendants()) do
         if v:IsA("BasePart") then
-            local name = v.Name:lower()
-            if ESP_SETTINGS.Item then
-                if name:find("wood") or name:find("iron") or name:find("food") then
-                    CreateESP(v,"ITEM",Color3.fromRGB(0,255,0))
-                end
+            local n = v.Name:lower()
+            if n:find("wood") or n:find("iron") or n:find("food") then
+                ESP(v,Color3.fromRGB(0,255,0))
             end
         end
     end
 end
 
---// PLAYER ESP
 local function PlayerESP()
-    for _,plr in pairs(Players:GetPlayers()) do
-        if plr ~= LP and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            CreateESP(plr.Character.HumanoidRootPart,"PLAYER",Color3.fromRGB(0,150,255))
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            ESP(p.Character.HumanoidRootPart,Color3.fromRGB(0,150,255))
         end
     end
 end
 
---// ENEMY / PERAMPOK ESP
 local function EnemyESP()
-    for _,v in pairs(workspace:GetDescendants()) do
-        if v:IsA("Model") and v.Name:lower():find("enemy") then
-            local hrp = v:FindFirstChild("HumanoidRootPart")
+    for _,m in pairs(workspace:GetDescendants()) do
+        if m:IsA("Model") and m.Name:lower():find("enemy") then
+            local hrp = m:FindFirstChild("HumanoidRootPart")
             if hrp then
-                CreateESP(hrp,"ENEMY",Color3.fromRGB(255,0,0))
+                ESP(hrp,Color3.fromRGB(255,0,0))
             end
         end
     end
 end
 
---// UPDATE LOOP (LOW LOAD)
+--================ AUTO FEATURES ================
 task.spawn(function()
-    while task.wait(2) do
+    while task.wait(1.5) do
         ClearESP()
-        if ESP_SETTINGS.Item then ItemESP() end
-        if ESP_SETTINGS.Player then PlayerESP() end
-        if ESP_SETTINGS.Enemy then EnemyESP() end
-    end
-end)
-
---// SIMPLE UI
-local ScreenGui = Instance.new("ScreenGui",LP.PlayerGui)
-local Frame = Instance.new("Frame",ScreenGui)
-Frame.Size = UDim2.fromOffset(220,180)
-Frame.Position = UDim2.fromOffset(30,200)
-Frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
-Frame.Active = true
-Frame.Draggable = true
-
-local function Button(text,y,callback)
-    local b = Instance.new("TextButton",Frame)
-    b.Size = UDim2.fromOffset(200,40)
-    b.Position = UDim2.fromOffset(10,y)
-    b.Text = text
-    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
-    b.TextColor3 = Color3.new(1,1,1)
-    b.MouseButton1Click:Connect(callback)
-end
-
-Button("ESP ITEM",10,function()
-    ESP_SETTINGS.Item = not ESP_SETTINGS.Item
-end)
-
-Button("ESP PLAYER",60,function()
-    ESP_SETTINGS.Player = not ESP_SETTINGS.Player
-end)
-
-Button("ESP PERAMPOK",110,function()
-    ESP_SETTINGS.Enemy = not ESP_SETTINGS.Enemy
-end)
+        if CFG.ES
